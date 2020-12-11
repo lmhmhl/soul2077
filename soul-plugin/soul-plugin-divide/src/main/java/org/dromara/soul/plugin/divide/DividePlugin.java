@@ -51,8 +51,9 @@ import reactor.core.publisher.Mono;
 public class DividePlugin extends AbstractSoulPlugin {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DividePlugin.class);
-    List<DivideUpstream> upstreamList;
-    DivideRuleHandle ruleHandle;
+    private List<DivideUpstream> upstreamList;
+    private DivideRuleHandle ruleHandle;
+
 //    @Override
 //    protected Mono<Void> doExecute(final ServerWebExchange exchange, final SoulPluginChain chain, final SelectorData selector, final RuleData rule) {
 //        final SoulContext soulContext = exchange.getAttribute(Constants.CONTEXT);
