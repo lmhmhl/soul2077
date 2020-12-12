@@ -34,6 +34,7 @@ import org.dromara.soul.plugin.api.SoulPluginChain;
 import org.dromara.soul.plugin.api.context.SoulContext;
 import org.dromara.soul.plugin.api.result.SoulResultEnum;
 import org.dromara.soul.plugin.base.AbstractSoulPlugin;
+import org.dromara.soul.plugin.base.utils.CheckUtils;
 import org.dromara.soul.plugin.base.utils.SoulResultWrap;
 import org.dromara.soul.plugin.base.utils.WebFluxResultUtils;
 import org.dromara.soul.plugin.divide.balance.utils.LoadBalanceUtils;
@@ -53,38 +54,18 @@ public class DividePlugin extends AbstractSoulPlugin {
     private static final Logger LOGGER = LoggerFactory.getLogger(DividePlugin.class);
     private List<DivideUpstream> upstreamList;
     private DivideRuleHandle ruleHandle;
-
-//    @Override
-//    protected Mono<Void> doExecute(final ServerWebExchange exchange, final SoulPluginChain chain, final SelectorData selector, final RuleData rule) {
-//        final SoulContext soulContext = exchange.getAttribute(Constants.CONTEXT);
-//        assert soulContext != null;
-//        final DivideRuleHandle ruleHandle = GsonUtils.getInstance().fromJson(rule.getHandle(), DivideRuleHandle.class);
-//        final List<DivideUpstream> upstreamList = UpstreamCacheManager.getInstance().findUpstreamListBySelectorId(selector.getId());
-//        if (CollectionUtils.isEmpty(upstreamList)) {
-//            LOGGER.error("divide upstream configuration error：{}", rule.toString());
-//            Object error = SoulResultWrap.error(SoulResultEnum.CANNOT_FIND_URL.getCode(), SoulResultEnum.CANNOT_FIND_URL.getMsg(), null);
-//            return WebFluxResultUtils.result(exchange, error);
-//        }
-//        final String ip = Objects.requireNonNull(exchange.getRequest().getRemoteAddress()).getAddress().getHostAddress();
-//        DivideUpstream divideUpstream = LoadBalanceUtils.selector(upstreamList, ruleHandle.getLoadBalance(), ip);
-//        if (Objects.isNull(divideUpstream)) {
-//            LOGGER.error("divide has no upstream");
-//            Object error = SoulResultWrap.error(SoulResultEnum.CANNOT_FIND_URL.getCode(), SoulResultEnum.CANNOT_FIND_URL.getMsg(), null);
-//            return WebFluxResultUtils.result(exchange, error);
-//        }
-//        //设置一下 http url
-//        String domain = buildDomain(divideUpstream);
-//        String realURL = buildRealURL(domain, soulContext, exchange);
-//        exchange.getAttributes().put(Constants.HTTP_URL, realURL);
-//        //设置下超时时间
-//        exchange.getAttributes().put(Constants.HTTP_TIME_OUT, ruleHandle.getTimeout());
-//        return chain.execute(exchange);
-//    }
-
+    private boolean selectorIsNull;
+    private boolean ruleIsNull;
     @Override
     protected Mono<Void> doExecute(ServerWebExchange exchange, SoulPluginChain chain) {
         final SoulContext soulContext = exchange.getAttribute(Constants.CONTEXT);
         assert soulContext != null;
+        if (selectorIsNull){
+            return CheckUtils.checkSelector(named(), exchange);
+        }
+        if (ruleIsNull){
+            return CheckUtils.checkRule(named(), exchange);
+        }
         if (CollectionUtils.isEmpty(upstreamList)) {
             //LOGGER.error("divide upstream configuration error：{}", rule.toString());
             Object error = SoulResultWrap.error(SoulResultEnum.CANNOT_FIND_URL.getCode(), SoulResultEnum.CANNOT_FIND_URL.getMsg(), null);
@@ -149,15 +130,15 @@ public class DividePlugin extends AbstractSoulPlugin {
     }
 
     @Override
-    public void visit(SelectorData IElement) {
-        upstreamList = UpstreamCacheManager.getInstance().findUpstreamListBySelectorId(IElement.getId());
-
+    public void visit(SelectorData selectorData) {
+        selectorIsNull = Objects.isNull(selectorData);
+        upstreamList = UpstreamCacheManager.getInstance().findUpstreamListBySelectorId(selectorData.getId());
     }
 
     @Override
-    public void visit(RuleData IElement) {
-        ruleHandle = GsonUtils.getInstance().fromJson(IElement.getHandle(), DivideRuleHandle.class);
-
+    public void visit(RuleData ruleData) {
+        ruleIsNull = Objects.isNull(ruleData);
+        ruleHandle = GsonUtils.getInstance().fromJson(ruleData.getHandle(), DivideRuleHandle.class);
     }
 
 

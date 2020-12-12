@@ -17,6 +17,7 @@
 
 package org.dromara.soul.plugin.springcloud;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.dromara.soul.common.constant.Constants;
 import org.dromara.soul.common.dto.RuleData;
@@ -26,6 +27,7 @@ import org.dromara.soul.common.enums.PluginEnum;
 import org.dromara.soul.common.enums.RpcTypeEnum;
 import org.dromara.soul.common.utils.GsonUtils;
 import org.dromara.soul.plugin.api.result.SoulResultEnum;
+import org.dromara.soul.plugin.base.utils.CheckUtils;
 import org.dromara.soul.plugin.base.utils.SoulResultWrap;
 import org.dromara.soul.plugin.api.SoulPluginChain;
 import org.dromara.soul.plugin.base.AbstractSoulPlugin;
@@ -45,9 +47,21 @@ import java.util.Objects;
  *
  * @author xiaoyu(myth)
  */
+@Slf4j
 public class SpringCloudPlugin extends AbstractSoulPlugin {
 
     private final LoadBalancerClient loadBalancer;
+    private ThreadLocal<SpringCloudRuleHandle> ruleHandleThreadLocal = new ThreadLocal<>();
+    private ThreadLocal<String> serviceIdThreadLocal = new ThreadLocal<>();
+    private ThreadLocal<String> SelectorNameThreadLocal = new ThreadLocal<>();
+    private ThreadLocal<Boolean>selectorIsNullThreadLocal = new ThreadLocal<>();
+    private ThreadLocal<Boolean>ruleIsNullThreadLocal = new ThreadLocal<>();
+
+//    private SpringCloudRuleHandle ruleHandle;
+//    private String serviceId;
+//    private String SelectorName;
+//    private static boolean selectorIsNull;
+//    private static boolean ruleIsNull;
 
     /**
      * Instantiates a new Spring cloud plugin.
@@ -59,20 +73,23 @@ public class SpringCloudPlugin extends AbstractSoulPlugin {
     }
 
     @Override
-    protected Mono<Void> doExecute(final ServerWebExchange exchange, final SoulPluginChain chain, final SelectorData selector, final RuleData rule) {
-        if (Objects.isNull(rule)) {
-            return Mono.empty();
+    protected Mono<Void> doExecute(final ServerWebExchange exchange, final SoulPluginChain chain) {
+        if (selectorIsNullThreadLocal.get()){
+            return CheckUtils.checkSelector(named(), exchange);
+        }
+        else if (ruleIsNullThreadLocal.get()){
+            return CheckUtils.checkRule(named(), exchange);
+        }else {
+            log.info("{} selector success match , selector name :{}", named(), SelectorNameThreadLocal.get());
         }
         final SoulContext soulContext = exchange.getAttribute(Constants.CONTEXT);
         assert soulContext != null;
-        final SpringCloudRuleHandle ruleHandle = GsonUtils.getInstance().fromJson(rule.getHandle(), SpringCloudRuleHandle.class);
-        final String serviceId = selector.getHandle();
-        if (StringUtils.isBlank(serviceId) || StringUtils.isBlank(ruleHandle.getPath())) {
+        if (StringUtils.isBlank(serviceIdThreadLocal.get()) || StringUtils.isBlank(ruleHandleThreadLocal.get().getPath())) {
             Object error = SoulResultWrap.error(SoulResultEnum.CANNOT_CONFIG_SPRINGCLOUD_SERVICEID.getCode(), SoulResultEnum.CANNOT_CONFIG_SPRINGCLOUD_SERVICEID.getMsg(), null);
             return WebFluxResultUtils.result(exchange, error);
         }
 
-        final ServiceInstance serviceInstance = loadBalancer.choose(serviceId);
+        final ServiceInstance serviceInstance = loadBalancer.choose(serviceIdThreadLocal.get());
         if (Objects.isNull(serviceInstance)) {
             Object error = SoulResultWrap.error(SoulResultEnum.SPRINGCLOUD_SERVICEID_IS_ERROR.getCode(), SoulResultEnum.SPRINGCLOUD_SERVICEID_IS_ERROR.getMsg(), null);
             return WebFluxResultUtils.result(exchange, error);
@@ -83,7 +100,7 @@ public class SpringCloudPlugin extends AbstractSoulPlugin {
 
         exchange.getAttributes().put(Constants.HTTP_URL, realURL);
         //set time out.
-        exchange.getAttributes().put(Constants.HTTP_TIME_OUT, ruleHandle.getTimeout());
+        exchange.getAttributes().put(Constants.HTTP_TIME_OUT, ruleHandleThreadLocal.get().getTimeout());
         return chain.execute(exchange);
     }
 
@@ -114,5 +131,18 @@ public class SpringCloudPlugin extends AbstractSoulPlugin {
             return url + "?" + query;
         }
         return url;
+    }
+
+    @Override
+    public void visit(SelectorData selectorData) {
+        selectorIsNullThreadLocal.set(Objects.isNull(selectorData));
+        serviceIdThreadLocal.set(selectorData.getHandle());
+        SelectorNameThreadLocal.set(selectorData.getName());
+    }
+
+    @Override
+    public void visit(RuleData ruleData) {
+        ruleIsNullThreadLocal.set(Objects.isNull(ruleData));
+        ruleHandleThreadLocal.set(GsonUtils.getInstance().fromJson(ruleData.getHandle(), SpringCloudRuleHandle.class));
     }
 }

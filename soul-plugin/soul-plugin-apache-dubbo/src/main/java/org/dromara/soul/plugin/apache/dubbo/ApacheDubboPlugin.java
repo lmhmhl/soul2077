@@ -30,8 +30,11 @@ import org.dromara.soul.plugin.api.SoulPluginChain;
 import org.dromara.soul.plugin.api.result.SoulResultEnum;
 import org.dromara.soul.plugin.base.AbstractSoulPlugin;
 import org.dromara.soul.plugin.api.context.SoulContext;
+import org.dromara.soul.plugin.base.utils.CheckUtils;
 import org.dromara.soul.plugin.base.utils.SoulResultWrap;
 import org.dromara.soul.plugin.base.utils.WebFluxResultUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -47,6 +50,8 @@ import java.util.Objects;
 public class ApacheDubboPlugin extends AbstractSoulPlugin {
 
     private final ApacheDubboProxyService dubboProxyService;
+    private boolean selectorIsNull;
+    private boolean ruleIsNull;
 
     /**
      * Instantiates a new Dubbo plugin.
@@ -56,9 +61,14 @@ public class ApacheDubboPlugin extends AbstractSoulPlugin {
     public ApacheDubboPlugin(final ApacheDubboProxyService dubboProxyService) {
         this.dubboProxyService = dubboProxyService;
     }
-
     @Override
-    protected Mono<Void> doExecute(final ServerWebExchange exchange, final SoulPluginChain chain, final SelectorData selector, final RuleData rule) {
+    protected Mono<Void> doExecute(final ServerWebExchange exchange, final SoulPluginChain chain) {
+        if (selectorIsNull){
+            return CheckUtils.checkSelector(named(), exchange);
+        }
+        if (ruleIsNull){
+            return CheckUtils.checkRule(named(), exchange);
+        }
         String body = exchange.getAttribute(Constants.DUBBO_PARAMS);
         SoulContext soulContext = exchange.getAttribute(Constants.CONTEXT);
         assert soulContext != null;
@@ -109,5 +119,15 @@ public class ApacheDubboPlugin extends AbstractSoulPlugin {
 
     private boolean checkMetaData(final MetaData metaData) {
         return null != metaData && !StringUtils.isBlank(metaData.getMethodName()) && !StringUtils.isBlank(metaData.getServiceName());
+    }
+
+    @Override
+    public void visit(SelectorData selectorData) {
+        selectorIsNull = Objects.isNull(selectorData);
+    }
+
+    @Override
+    public void visit(RuleData ruleData) {
+        ruleIsNull = Objects.isNull(ruleData);
     }
 }

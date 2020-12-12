@@ -47,10 +47,16 @@ import java.util.Objects;
 @Slf4j
 public class WafPlugin extends AbstractSoulPlugin {
 
+    private boolean selectorIsNull;
+    private boolean ruleIsNull;
+    private String handle;
+
     @Override
-    protected Mono<Void> doExecute(final ServerWebExchange exchange, final SoulPluginChain chain, final SelectorData selector, final RuleData rule) {
+    protected Mono<Void> doExecute(final ServerWebExchange exchange, final SoulPluginChain chain) {
         WafConfig wafConfig = Singleton.INST.get(WafConfig.class);
-        if (Objects.isNull(selector) && Objects.isNull(rule)) {
+
+        if (selectorIsNull && ruleIsNull) {
+            //黑白名单
             if (WafModelEnum.BLACK.getName().equals(wafConfig.getModel())) {
                 return chain.execute(exchange);
             } else {
@@ -59,7 +65,7 @@ public class WafPlugin extends AbstractSoulPlugin {
                 return WebFluxResultUtils.result(exchange, error);
             }
         }
-        String handle = rule.getHandle();
+
         WafHandle wafHandle = GsonUtils.getInstance().fromJson(handle, WafHandle.class);
         if (Objects.isNull(wafHandle) || StringUtils.isBlank(wafHandle.getPermission())) {
             log.error("waf handler can not configuration：{}", handle);
@@ -82,4 +88,19 @@ public class WafPlugin extends AbstractSoulPlugin {
     public int getOrder() {
         return PluginEnum.WAF.getCode();
     }
+
+    @Override
+    public void visit(SelectorData selectorData) {
+        selectorIsNull = Objects.isNull(selectorData);
+    }
+
+
+    @Override
+    public void visit (RuleData rule){
+        ruleIsNull = Objects.isNull(rule);
+        handle=rule.getHandle();
+    }
+
+
+
 }

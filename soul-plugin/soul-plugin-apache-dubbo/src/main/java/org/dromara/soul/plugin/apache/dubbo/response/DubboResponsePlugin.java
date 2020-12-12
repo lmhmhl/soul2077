@@ -19,6 +19,8 @@ package org.dromara.soul.plugin.apache.dubbo.response;
 
 import java.util.Objects;
 import org.dromara.soul.common.constant.Constants;
+import org.dromara.soul.common.dto.RuleData;
+import org.dromara.soul.common.dto.SelectorData;
 import org.dromara.soul.common.enums.PluginEnum;
 import org.dromara.soul.common.enums.RpcTypeEnum;
 import org.dromara.soul.common.utils.JsonUtils;

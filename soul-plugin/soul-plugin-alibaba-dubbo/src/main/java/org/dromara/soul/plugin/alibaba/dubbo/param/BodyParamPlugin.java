@@ -18,6 +18,8 @@
 package org.dromara.soul.plugin.alibaba.dubbo.param;
 
 import org.dromara.soul.common.constant.Constants;
+import org.dromara.soul.common.dto.RuleData;
+import org.dromara.soul.common.dto.SelectorData;
 import org.dromara.soul.common.enums.PluginEnum;
 import org.dromara.soul.common.enums.RpcTypeEnum;
 import org.dromara.soul.common.utils.HttpParamConverter;

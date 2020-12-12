@@ -59,12 +59,22 @@ public class SignPlugin extends AbstractSoulPlugin {
     }
 
     @Override
-    protected Mono<Void> doExecute(final ServerWebExchange exchange, final SoulPluginChain chain, final SelectorData selector, final RuleData rule) {
+    protected Mono<Void> doExecute(final ServerWebExchange exchange, final SoulPluginChain chain) {
         Pair<Boolean, String> result = signService.signVerify(exchange);
         if (!result.getLeft()) {
             Object error = SoulResultWrap.error(SoulResultEnum.SIGN_IS_NOT_PASS.getCode(), result.getRight(), null);
             return WebFluxResultUtils.result(exchange, error);
         }
         return chain.execute(exchange);
+    }
+
+    @Override
+    public void visit(SelectorData IElement) {
+
+    }
+
+    @Override
+    public void visit(RuleData IElement) {
+
     }
 }

@@ -19,6 +19,8 @@ package org.dromara.soul.plugin.global;
 
 import org.apache.commons.lang3.StringUtils;
 import org.dromara.soul.common.constant.Constants;
+import org.dromara.soul.common.dto.RuleData;
+import org.dromara.soul.common.dto.SelectorData;
 import org.dromara.soul.plugin.api.SoulPlugin;
 import org.dromara.soul.plugin.api.SoulPluginChain;
 import org.dromara.soul.plugin.api.context.SoulContext;
@@ -77,5 +79,15 @@ public class GlobalPlugin implements SoulPlugin {
     @Override
     public String named() {
         return "global";
+    }
+
+    @Override
+    public void visit(SelectorData IElement) {
+
+    }
+
+    @Override
+    public void visit(RuleData IElement) {
+
     }
 }

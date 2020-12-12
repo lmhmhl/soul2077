@@ -23,6 +23,7 @@ import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.dromara.soul.common.dto.IVisitor;
 import org.dromara.soul.common.dto.PluginData;
 import org.dromara.soul.common.dto.RuleData;
 import org.dromara.soul.common.dto.SelectorData;
@@ -43,7 +44,7 @@ import reactor.core.publisher.Mono;
  */
 @RequiredArgsConstructor
 @Slf4j
-public abstract class AbstractSoulPlugin implements SoulPlugin {
+public abstract class AbstractSoulPlugin implements SoulPlugin, IVisitor {
 
     /**
      * this is Template Method child has Implement your own logic.
@@ -74,20 +75,16 @@ public abstract class AbstractSoulPlugin implements SoulPlugin {
                 return CheckUtils.checkSelector(pluginName, exchange, chain);
             }
             final SelectorData selectorData = matchSelector(exchange, selectors);
-            if (Objects.isNull(selectorData)) {
-                if (PluginEnum.WAF.getName().equals(pluginName)) {
-                    return doExecute(exchange, chain);
-                }
-                return CheckUtils.checkSelector(pluginName, exchange, chain);
-            }
-            if (selectorData.getLoged()) {
-                log.info("{} selector success match , selector name :{}", pluginName, selectorData.getName());
-            }
+            selectorData.accept(this);
+
+//            if (Objects.isNull(selectorData)) {
+//                return CheckUtils.checkSelector(pluginName, exchange, chain);
+//            }
+//            if (selectorData.getLoged()) {
+//                log.info("{} selector success match , selector name :{}", pluginName, selectorData.getName());
+//            }
             final List<RuleData> rules = BaseDataCache.getInstance().obtainRuleData(selectorData.getId());
             if (CollectionUtils.isEmpty(rules)) {
-                if (PluginEnum.WAF.getName().equals(pluginName)) {
-                    return doExecute(exchange, chain);
-                }
                 return CheckUtils.checkRule(pluginName, exchange, chain);
             }
             RuleData rule;
@@ -97,14 +94,13 @@ public abstract class AbstractSoulPlugin implements SoulPlugin {
             } else {
                 rule = matchRule(exchange, rules);
             }
-            if (Objects.isNull(rule)) {
-                return CheckUtils.checkRule(pluginName, exchange, chain);
-            }
+//            if (Objects.isNull(rule)) {
+//                return CheckUtils.checkRule(pluginName, exchange, chain);
+//            }
             if (rule.getLoged()) {
                 log.info("{} rule success match ,rule name :{}", pluginName, rule.getName());
             }
             //return doExecute(exchange, chain, selectorData, rule);
-            selectorData.accept(this);
             rule.accept(this);
             return doExecute(exchange,chain);
         }

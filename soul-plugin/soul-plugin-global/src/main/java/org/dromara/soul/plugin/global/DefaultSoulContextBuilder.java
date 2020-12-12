@@ -35,6 +35,7 @@ import org.springframework.web.server.ServerWebExchange;
  *
  * @author xiaoyu
  */
+//可以进行优化重构
 public class DefaultSoulContextBuilder implements SoulContextBuilder {
     
     @Override
@@ -55,10 +56,10 @@ public class DefaultSoulContextBuilder implements SoulContextBuilder {
      * @return RequestDTO request dto
      */
     private SoulContext transform(final ServerHttpRequest request, final MetaData metaData) {
+        SoulContext soulContext = new SoulContext();
         final String appKey = request.getHeaders().getFirst(Constants.APP_KEY);
         final String sign = request.getHeaders().getFirst(Constants.SIGN);
         final String timestamp = request.getHeaders().getFirst(Constants.TIMESTAMP);
-        SoulContext soulContext = new SoulContext();
         String path = request.getURI().getPath();
         soulContext.setPath(path);
         if (Objects.nonNull(metaData) && metaData.getEnabled()) {
@@ -102,6 +103,7 @@ public class DefaultSoulContextBuilder implements SoulContextBuilder {
     private void setSoulContextByHttp(final SoulContext soulContext, final String path) {
         String contextPath = "/";
         String[] splitList = StringUtils.split(path, "/");
+        //the first element is IP address plus Port
         if (splitList.length != 0) {
             contextPath = contextPath.concat(splitList[0]);
         }

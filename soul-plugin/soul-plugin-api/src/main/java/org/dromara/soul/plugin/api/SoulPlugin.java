@@ -16,8 +16,6 @@
  */
 
 package org.dromara.soul.plugin.api;
-
-import org.dromara.soul.common.dto.IVisitor;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -26,7 +24,7 @@ import reactor.core.publisher.Mono;
  *
  * @author xiaoyu
  */
-public interface SoulPlugin extends IVisitor {
+public interface SoulPlugin  {
 
     /**
      * Process the Web request and (optionally) delegate to the next

@@ -74,4 +74,18 @@ public class CheckUtils {
         }
         return chain.execute(exchange);
     }
-}
+
+
+    public static Mono<Void> checkSelector( final String pluginName, final ServerWebExchange exchange) {
+        LOGGER.error("can not match selector data :{}", pluginName);
+        Object error = SoulResultWrap.error(SoulResultEnum.CANNOT_FIND_SELECTOR.getCode(), SoulResultEnum.CANNOT_FIND_SELECTOR.getMsg(), null);
+        return WebFluxResultUtils.result(exchange, error);
+    }
+
+
+    public static Mono<Void> checkRule(final String pluginName, final ServerWebExchange exchange){
+        LOGGER.error("can not match rule data :{}", pluginName);
+        Object error = SoulResultWrap.error(SoulResultEnum.RULE_NOT_FIND.getCode(), SoulResultEnum.RULE_NOT_FIND.getMsg(), null);
+        return WebFluxResultUtils.result(exchange, error);
+    }
+ }
